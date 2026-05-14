@@ -4,136 +4,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#4CAF50">
     <title>拍照算熱量</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
-            background: #f0f2f5;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            min-height: 100dvh;
-            padding: 16px;
-            padding-top: max(16px, env(safe-area-inset-top));
-            padding-bottom: max(16px, env(safe-area-inset-bottom));
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 16px; }
         .container { max-width: 420px; width: 100%; }
         .header { text-align: center; margin-bottom: 16px; }
-        .header .icon { font-size: 2.5rem; display: block; margin-bottom: 2px; }
-        .header h1 { font-size: 1.4rem; color: #1a1a1a; font-weight: 700; }
-        .card {
-            background: #fff;
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
+        .header .icon { font-size: 2.5rem; }
+        .header h1 { font-size: 1.4rem; color: #1a1a1a; }
+        .card { background: #fff; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .card-title { font-weight: 700; font-size: 0.9rem; color: #333; margin-bottom: 10px; }
-        .goal-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-        .goal-row label { font-size: 0.85rem; color: #555; font-weight: 600; }
-        .goal-row input {
-            width: 90px; padding: 10px; border: 1.5px solid #e0e0e0;
-            border-radius: 10px; font-size: 0.9rem; font-weight: 600; text-align: center;
-        }
-        .goal-row button {
-            padding: 10px 16px; background: #4CAF50; color: #fff;
-            border: none; border-radius: 10px; font-weight: 600; margin-left: auto;
-        }
+        .goal-row { display: flex; align-items: center; gap: 10px; }
+        .goal-row input { width: 90px; padding: 10px; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 0.9rem; text-align: center; }
+        .goal-row button { padding: 10px 16px; background: #4CAF50; color: #fff; border: none; border-radius: 10px; font-weight: 600; margin-left: auto; }
         .remain-section { margin-top: 10px; }
         .remain-text { display: flex; justify-content: space-between; margin-bottom: 6px; }
         .remain-text .value { font-size: 1.6rem; font-weight: 800; }
-        .value.green { color: #2e7d32; }
-        .value.orange { color: #e65100; }
-        .value.red { color: #c62828; }
+        .value.green { color: #2e7d32; } .value.orange { color: #e65100; } .value.red { color: #c62828; }
         .progress-bar { width: 100%; height: 10px; background: #e0e0e0; border-radius: 5px; overflow: hidden; }
         .progress-fill { height: 100%; border-radius: 5px; }
-        .progress-fill.safe { background: #4CAF50; }
-        .progress-fill.warn { background: #FF9800; }
-        .progress-fill.over { background: #f44336; }
+        .progress-fill.safe { background: #4CAF50; } .progress-fill.warn { background: #FF9800; } .progress-fill.over { background: #f44336; }
         .today-total { font-size: 0.8rem; color: #888; margin-top: 6px; }
-        .api-card input {
-            width: 100%; padding: 11px; border: 1.5px solid #e0e0e0;
-            border-radius: 10px; font-size: 0.8rem; font-family: monospace;
-        }
+        .api-card input { width: 100%; padding: 11px; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 0.8rem; font-family: monospace; }
         .api-card .hint { font-size: 0.7rem; color: #aaa; margin-top: 5px; }
-        .api-card .hint a { color: #4CAF50; }
         .btn-row { display: flex; gap: 10px; margin-bottom: 12px; }
-        .btn-row button {
-            flex: 1; padding: 14px; border: none; border-radius: 14px;
-            font-size: 0.95rem; font-weight: 600; color: #fff;
-        }
-        .btn-camera { background: #4CAF50; }
-        .btn-gallery { background: #2196F3; }
-        .preview-wrapper {
-            position: relative; width: 100%; aspect-ratio: 1/1;
-            border-radius: 16px; overflow: hidden; margin-bottom: 12px;
-            background: #e8e8e8; display: none;
-        }
+        .btn-row button { flex: 1; padding: 14px; border: none; border-radius: 14px; font-size: 0.95rem; font-weight: 600; color: #fff; }
+        .btn-camera { background: #4CAF50; } .btn-gallery { background: #2196F3; }
+        .preview-wrapper { position: relative; width: 100%; aspect-ratio: 1/1; border-radius: 16px; overflow: hidden; margin-bottom: 12px; background: #e8e8e8; display: none; }
         .preview-wrapper img { width: 100%; height: 100%; object-fit: cover; }
-        .preview-wrapper button {
-            position: absolute; bottom: 10px; right: 10px;
-            background: rgba(0,0,0,0.6); color: #fff; border: none;
-            border-radius: 20px; padding: 7px 12px; font-size: 0.75rem;
-        }
-        .loading-card {
-            background: #fff; border-radius: 16px; padding: 24px;
-            text-align: center; display: none;
-        }
-        .spinner {
-            width: 32px; height: 32px; border: 3px solid #e0e0e0;
-            border-top: 3px solid #4CAF50; border-radius: 50%;
-            animation: spin 0.7s linear infinite; margin: 0 auto 12px;
-        }
+        .preview-wrapper button { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 20px; padding: 7px 12px; }
+        .loading-card { background: #fff; border-radius: 16px; padding: 24px; text-align: center; display: none; }
+        .spinner { width: 32px; height: 32px; border: 3px solid #e0e0e0; border-top: 3px solid #4CAF50; border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 12px; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .result-card {
-            background: #fff; border-radius: 16px; padding: 16px; display: none;
-        }
+        .result-card { background: #fff; border-radius: 16px; padding: 16px; display: none; }
         .result-card .food-name { font-size: 1rem; font-weight: 700; }
         .result-card .calories { font-size: 1.8rem; font-weight: 800; color: #e65100; }
         .result-card .macro-row { display: flex; gap: 8px; margin-top: 10px; }
-        .result-card .macro-item {
-            flex: 1; background: #f5f5f5; border-radius: 10px; padding: 8px; text-align: center;
-        }
+        .result-card .macro-item { flex: 1; background: #f5f5f5; border-radius: 10px; padding: 8px; text-align: center; }
         .result-card .macro-item .value { font-size: 1rem; font-weight: 700; }
         .result-card .macro-item .label { font-size: 0.65rem; color: #888; }
-        .result-card .btn-add {
-            width: 100%; margin-top: 12px; padding: 10px;
-            background: #4CAF50; color: #fff; border: none;
-            border-radius: 10px; font-weight: 600;
-        }
-        .error-card {
-            background: #ffebee; border-radius: 16px; padding: 14px;
-            display: none; color: #c62828;
-        }
+        .result-card .btn-add { width: 100%; margin-top: 12px; padding: 10px; background: #4CAF50; color: #fff; border: none; border-radius: 10px; font-weight: 600; }
+        .error-card { background: #ffebee; border-radius: 16px; padding: 14px; display: none; color: #c62828; font-size: 0.85rem; }
         .history-list { list-style: none; }
-        .history-item {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 10px 0; border-bottom: 1px solid #f0f0f0;
-        }
-        .history-item .name { font-weight: 600; font-size: 0.85rem; }
+        .history-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+        .history-item .name { font-weight: 600; }
         .history-item .kcal { font-weight: 700; color: #e65100; }
         .history-item .btn-del { background: none; border: none; color: #ccc; font-size: 1.1rem; }
         .empty-history { text-align: center; color: #bbb; padding: 20px; }
-        .btn-reset {
-            display: block; width: 100%; margin-top: 10px; padding: 8px;
-            background: none; border: 1px solid #e0e0e0; border-radius: 8px;
-            color: #999; font-size: 0.75rem;
-        }
+        .btn-reset { display: block; width: 100%; margin-top: 10px; padding: 8px; background: none; border: 1px solid #e0e0e0; border-radius: 8px; color: #999; }
         .footer { text-align: center; margin-top: 16px; font-size: 0.7rem; color: #bbb; }
         #fileInput { display: none; }
     </style>
 </head>
 <body>
 <div class="container">
-    <div class="header">
-        <span class="icon">🥗</span>
-        <h1>拍照計算熱量</h1>
-    </div>
-
+    <div class="header"><span class="icon">🥗</span><h1>拍照計算熱量</h1></div>
     <div class="card">
         <div class="card-title">🎯 每日目標</div>
         <div class="goal-row">
@@ -143,42 +69,24 @@
             <button id="btnSaveGoal">儲存</button>
         </div>
         <div class="remain-section">
-            <div class="remain-text">
-                <span>今日剩餘</span>
-                <span class="value green" id="remainCal">2000</span>
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill safe" id="progressFill" style="width:0%"></div>
-            </div>
+            <div class="remain-text"><span>今日剩餘</span><span class="value green" id="remainCal">2000</span></div>
+            <div class="progress-bar"><div class="progress-fill safe" id="progressFill" style="width:0%"></div></div>
             <div class="today-total">已攝取 <strong id="todayTotal">0</strong> 大卡</div>
         </div>
     </div>
-
     <div class="card api-card">
         <div class="card-title">🔑 Gemini API Key</div>
         <input type="password" id="apiKey" placeholder="輸入你的 Gemini API Key...">
-        <div class="hint"><a href="https://aistudio.google.com/apikey" target="_blank">👉 點此免費申請</a>（免信用卡，每月1500次）</div>
+        <div class="hint"><a href="https://aistudio.google.com/apikey" target="_blank">👉 點此免費申請</a></div>
     </div>
-
     <div class="btn-row">
         <button class="btn-camera" id="btnCamera">📷 拍照</button>
         <button class="btn-gallery" id="btnGallery">🖼️ 選照片</button>
     </div>
-
     <input type="file" id="fileInput" accept="image/*">
-
-    <div class="preview-wrapper" id="previewWrapper">
-        <img id="previewImg" alt="食物照片">
-        <button id="btnRetake">✕ 重拍</button>
-    </div>
-
-    <div class="loading-card" id="loadingCard">
-        <div class="spinner"></div>
-        <p>AI 正在辨識食物...</p>
-    </div>
-
+    <div class="preview-wrapper" id="previewWrapper"><img id="previewImg" alt="食物照片"><button id="btnRetake">✕ 重拍</button></div>
+    <div class="loading-card" id="loadingCard"><div class="spinner"></div><p>AI 正在辨識食物...</p></div>
     <div class="error-card" id="errorCard"></div>
-
     <div class="result-card" id="resultCard">
         <div class="food-name" id="foodName"></div>
         <div class="calories" id="caloriesDisplay">-- <span>大卡</span></div>
@@ -190,16 +98,13 @@
         <button class="btn-add" id="btnAddRecord">✅ 加入今日紀錄</button>
         <div style="margin-top:10px;font-size:0.65rem;color:#bbb;text-align:center;">⚠️ AI 估算僅供參考</div>
     </div>
-
     <div class="card">
         <div class="card-title">📋 今日紀錄</div>
         <ul class="history-list" id="historyList"><li class="empty-history">尚無紀錄，拍張照片吧！</li></ul>
         <button class="btn-reset" id="btnReset">清空今日紀錄</button>
     </div>
-
     <div class="footer">資料只存在你的手機 · 隱私安全</div>
 </div>
-
 <script>
 (function() {
     var apiKeyInput = document.getElementById('apiKey');
@@ -222,31 +127,20 @@
         var d = new Date();
         return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
     }
-
     function saveGoal() {
         var val = parseInt(goalInput.value) || 2000;
         goalInput.value = val;
         localStorage.setItem('daily_goal', val);
         updateRemainDisplay();
     }
-
     function loadTodayRecords() {
         var today = getTodayKey();
         var savedDate = localStorage.getItem('record_date');
-        if (savedDate !== today) {
-            localStorage.setItem('record_date', today);
-            localStorage.setItem('today_records', JSON.stringify([]));
-            return [];
-        }
+        if (savedDate !== today) { localStorage.setItem('record_date', today); localStorage.setItem('today_records', JSON.stringify([])); return []; }
         var raw = localStorage.getItem('today_records');
         return raw ? JSON.parse(raw) : [];
     }
-
-    function saveTodayRecords(records) {
-        localStorage.setItem('record_date', getTodayKey());
-        localStorage.setItem('today_records', JSON.stringify(records));
-    }
-
+    function saveTodayRecords(records) { localStorage.setItem('record_date', getTodayKey()); localStorage.setItem('today_records', JSON.stringify(records)); }
     function updateRemainDisplay() {
         var goal = parseInt(goalInput.value) || 2000;
         var records = loadTodayRecords();
@@ -256,20 +150,15 @@
         remainCal.textContent = remain >= 0 ? remain : 0;
         var percent = Math.min((consumed / goal) * 100, 100);
         progressFill.style.width = percent + '%';
-        remainCal.className = 'value';
-        progressFill.className = 'progress-fill';
+        remainCal.className = 'value'; progressFill.className = 'progress-fill';
         if (percent < 80) { remainCal.classList.add('green'); progressFill.classList.add('safe'); }
         else if (percent < 100) { remainCal.classList.add('orange'); progressFill.classList.add('warn'); }
         else { remainCal.classList.add('red'); progressFill.classList.add('over'); }
     }
-
     function updateHistoryList() {
         var records = loadTodayRecords();
         historyList.innerHTML = '';
-        if (records.length === 0) {
-            historyList.innerHTML = '<li class="empty-history">尚無紀錄，拍張照片吧！</li>';
-            return;
-        }
+        if (records.length === 0) { historyList.innerHTML = '<li class="empty-history">尚無紀錄，拍張照片吧！</li>'; return; }
         records.forEach(function(r, index) {
             var li = document.createElement('li');
             li.className = 'history-item';
@@ -278,43 +167,26 @@
         });
         document.querySelectorAll('.btn-del').forEach(function(btn) {
             btn.addEventListener('click', function() {
-                var index = parseInt(this.getAttribute('data-index'));
                 var recs = loadTodayRecords();
-                recs.splice(index, 1);
+                recs.splice(parseInt(this.getAttribute('data-index')), 1);
                 saveTodayRecords(recs);
                 updateHistoryList();
                 updateRemainDisplay();
             });
         });
     }
-
     function addToToday() {
         if (!latestResult) return;
         var records = loadTodayRecords();
-        records.push({
-            food: latestResult.food || '未知食物',
-            calories: latestResult.calories || 0,
-            protein: latestResult.protein || 0,
-            fat: latestResult.fat || 0,
-            carbs: latestResult.carbs || 0
-        });
+        records.push({ food: latestResult.food || '未知', calories: latestResult.calories || 0, protein: latestResult.protein || 0, fat: latestResult.fat || 0, carbs: latestResult.carbs || 0 });
         saveTodayRecords(records);
-        resultCard.style.display = 'none';
-        previewWrapper.style.display = 'none';
-        latestResult = null;
-        updateHistoryList();
-        updateRemainDisplay();
+        resultCard.style.display = 'none'; previewWrapper.style.display = 'none'; latestResult = null;
+        updateHistoryList(); updateRemainDisplay();
     }
-
     function resetPhoto() {
-        previewWrapper.style.display = 'none';
-        previewImg.src = '';
-        fileInput.value = '';
-        resultCard.style.display = 'none';
-        errorCard.style.display = 'none';
-        latestResult = null;
+        previewWrapper.style.display = 'none'; previewImg.src = ''; fileInput.value = '';
+        resultCard.style.display = 'none'; errorCard.style.display = 'none'; latestResult = null;
     }
-
     function handleFile(event) {
         var file = event.target.files[0];
         if (!file) return;
@@ -323,18 +195,14 @@
             var img = new Image();
             img.onload = function() {
                 var canvas = document.createElement('canvas');
-                var maxSize = 1024;
-                var w = img.width, h = img.height;
+                var maxSize = 1024, w = img.width, h = img.height;
                 if (w > h && w > maxSize) { h = Math.round(h * maxSize / w); w = maxSize; }
                 else if (h > maxSize) { w = Math.round(w * maxSize / h); h = maxSize; }
                 canvas.width = w; canvas.height = h;
-                var ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, w, h);
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
                 var compressed = canvas.toDataURL('image/jpeg', 0.75);
-                previewImg.src = compressed;
-                previewWrapper.style.display = 'block';
-                errorCard.style.display = 'none';
-                resultCard.style.display = 'none';
+                previewImg.src = compressed; previewWrapper.style.display = 'block';
+                errorCard.style.display = 'none'; resultCard.style.display = 'none';
                 analyzeImage(compressed);
             };
             img.src = e.target.result;
@@ -342,70 +210,90 @@
         reader.readAsDataURL(file);
     }
 
+    // ===== 核心修正：更強健的 JSON 解析 =====
+    function parseAIJson(text) {
+        // 移除所有可能的 markdown 標記
+        var cleaned = text.trim();
+        cleaned = cleaned.replace(/^```json\s*/i, '').replace(/```\s*$/, '');
+        cleaned = cleaned.replace(/^```\s*/i, '').replace(/```\s*$/, '');
+        cleaned = cleaned.trim();
+
+        // 嘗試直接解析
+        try { return JSON.parse(cleaned); } catch(e) {}
+
+        // 嘗試擷取第一個 { 到最後一個 }
+        var start = cleaned.indexOf('{');
+        var end = cleaned.lastIndexOf('}');
+        if (start !== -1 && end !== -1 && end > start) {
+            try { return JSON.parse(cleaned.substring(start, end + 1)); } catch(e) {}
+        }
+
+        // 嘗試用正則擷取數字
+        var foodMatch = cleaned.match(/"food"\s*:\s*"([^"]+)"/);
+        var calMatch = cleaned.match(/"calories"\s*:\s*(\d+)/);
+        var proMatch = cleaned.match(/"protein"\s*:\s*(\d+)/);
+        var fatMatch = cleaned.match(/"fat"\s*:\s*(\d+)/);
+        var carbMatch = cleaned.match(/"carbs"\s*:\s*(\d+)/);
+
+        return {
+            food: foodMatch ? foodMatch[1] : '無法辨識',
+            calories: calMatch ? parseInt(calMatch[1]) : 0,
+            protein: proMatch ? parseInt(proMatch[1]) : 0,
+            fat: fatMatch ? parseInt(fatMatch[1]) : 0,
+            carbs: carbMatch ? parseInt(carbMatch[1]) : 0
+        };
+    }
+
     async function analyzeImage(base64Image) {
         var apiKey = apiKeyInput.value.trim();
         if (!apiKey) { errorCard.style.display = 'block'; errorCard.textContent = '❌ 請先輸入 API Key'; return; }
-        loadingCard.style.display = 'block';
-        resultCard.style.display = 'none';
-        errorCard.style.display = 'none';
-        btnCamera.disabled = true;
-        btnGallery.disabled = true;
+        loadingCard.style.display = 'block'; resultCard.style.display = 'none'; errorCard.style.display = 'none';
+        btnCamera.disabled = true; btnGallery.disabled = true;
         try {
             var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
             var base64Data = base64Image.split(',')[1];
             var mimeType = base64Image.match(/data:(image\/\w+);/)?.[1] || 'image/jpeg';
             var requestBody = {
                 contents: [{ parts: [
-                    { text: '你是專業營養師。請仔細觀察照片中的食物，並用繁體中文回覆。請嚴格依照以下 JSON 格式回覆（只回傳 JSON，不要有其他文字）：\n\n{\n  "food": "食物名稱",\n  "calories": 數字,\n  "protein": 數字,\n  "fat": 數字,\n  "carbs": 數字\n}\n\n請精確估算。' },
+                    { text: '請分析這張食物照片。只回覆一個JSON，格式：{"food":"食物名","calories":熱量,"protein":蛋白質,"fat":脂肪,"carbs":碳水}。數值為整數，不要有文字說明。' },
                     { inline_data: { mime_type: mimeType, data: base64Data } }
                 ] }],
-                generationConfig: { temperature: 0.2, maxOutputTokens: 300 }
+                generationConfig: { temperature: 0, maxOutputTokens: 200 }
             };
             var response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) });
             var data = await response.json();
             if (!response.ok) throw new Error(data.error?.message || 'HTTP ' + response.status);
             var replyText = data.candidates?.[0]?.content?.parts?.[0]?.text;
             if (!replyText) throw new Error('無回傳內容');
-            var jsonStr = replyText.trim().replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
-            latestResult = JSON.parse(jsonStr);
+
+            // 使用強健的解析函式
+            latestResult = parseAIJson(replyText);
+
             document.getElementById('foodName').textContent = latestResult.food || '未知';
-            document.getElementById('caloriesDisplay').innerHTML = (latestResult.calories || '--') + ' <span>大卡</span>';
-            document.getElementById('proteinVal').textContent = latestResult.protein || '--';
-            document.getElementById('fatVal').textContent = latestResult.fat || '--';
-            document.getElementById('carbsVal').textContent = latestResult.carbs || '--';
+            document.getElementById('caloriesDisplay').innerHTML = (latestResult.calories || 0) + ' <span>大卡</span>';
+            document.getElementById('proteinVal').textContent = latestResult.protein || 0;
+            document.getElementById('fatVal').textContent = latestResult.fat || 0;
+            document.getElementById('carbsVal').textContent = latestResult.carbs || 0;
             resultCard.style.display = 'block';
         } catch (err) {
             errorCard.style.display = 'block';
             errorCard.textContent = '❌ ' + err.message;
         } finally {
             loadingCard.style.display = 'none';
-            btnCamera.disabled = false;
-            btnGallery.disabled = false;
+            btnCamera.disabled = false; btnGallery.disabled = false;
         }
     }
 
     document.getElementById('btnSaveGoal').addEventListener('click', saveGoal);
-    btnCamera.addEventListener('click', function() {
-        fileInput.setAttribute('capture', 'environment');
-        fileInput.click();
-    });
-    btnGallery.addEventListener('click', function() {
-        fileInput.removeAttribute('capture');
-        fileInput.click();
-    });
+    btnCamera.addEventListener('click', function() { fileInput.setAttribute('capture', 'environment'); fileInput.click(); });
+    btnGallery.addEventListener('click', function() { fileInput.removeAttribute('capture'); fileInput.click(); });
     document.getElementById('btnRetake').addEventListener('click', resetPhoto);
     document.getElementById('btnAddRecord').addEventListener('click', addToToday);
     document.getElementById('btnReset').addEventListener('click', function() {
-        if (confirm('確定清空今日紀錄？')) {
-            saveTodayRecords([]);
-            updateHistoryList();
-            updateRemainDisplay();
-        }
+        if (confirm('確定清空今日紀錄？')) { saveTodayRecords([]); updateHistoryList(); updateRemainDisplay(); }
     });
     fileInput.addEventListener('change', handleFile);
-    apiKeyInput.addEventListener('input', function() {
-        localStorage.setItem('gemini_api_key', this.value);
-    });
+    apiKeyInput.addEventListener('input', function() { localStorage.setItem('gemini_api_key', this.value); });
     goalInput.addEventListener('change', saveGoal);
 
     var savedKey = localStorage.getItem('gemini_api_key');
@@ -417,4 +305,4 @@
 })();
 </script>
 </body>
-          </html>
+</html>

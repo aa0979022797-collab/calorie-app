@@ -1,344 +1,275 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#4CAF50">
-    <title>拍照算熱量</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 16px; }
-        .container { max-width: 420px; width: 100%; }
-        .header { text-align: center; margin-bottom: 16px; }
-        .header .icon { font-size: 2.5rem; }
-        .header h1 { font-size: 1.4rem; color: #1a1a1a; }
-        .card { background: #fff; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .card-title { font-weight: 700; font-size: 0.9rem; color: #333; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
-        .card-title .toggle { font-size: 0.75rem; color: #4CAF50; font-weight: 500; }
-        .goal-row { display: flex; align-items: center; gap: 10px; }
-        .goal-row input { width: 90px; padding: 10px; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 0.9rem; text-align: center; }
-        .goal-row button { padding: 10px 16px; background: #4CAF50; color: #fff; border: none; border-radius: 10px; font-weight: 600; margin-left: auto; }
-        .remain-section { margin-top: 10px; }
-        .remain-text { display: flex; justify-content: space-between; margin-bottom: 6px; }
-        .remain-text .value { font-size: 1.6rem; font-weight: 800; }
-        .value.green { color: #2e7d32; } .value.orange { color: #e65100; } .value.red { color: #c62828; }
-        .progress-bar { width: 100%; height: 10px; background: #e0e0e0; border-radius: 5px; overflow: hidden; }
-        .progress-fill { height: 100%; border-radius: 5px; }
-        .progress-fill.safe { background: #4CAF50; } .progress-fill.warn { background: #FF9800; } .progress-fill.over { background: #f44336; }
-        .today-total { font-size: 0.8rem; color: #888; margin-top: 6px; }
-        .api-card input { width: 100%; padding: 11px; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 0.8rem; font-family: monospace; }
-        .api-card .hint { font-size: 0.7rem; color: #aaa; margin-top: 5px; }
-        .tab-row { display: flex; gap: 0; margin-bottom: 12px; border-radius: 14px; overflow: hidden; }
-        .tab-btn { flex: 1; padding: 12px; border: none; font-size: 0.85rem; font-weight: 600; cursor: pointer; background: #e0e0e0; color: #666; }
-        .tab-btn.active { background: #4CAF50; color: #fff; }
-        .btn-row { display: flex; gap: 10px; margin-bottom: 12px; }
-        .btn-row button { flex: 1; padding: 14px; border: none; border-radius: 14px; font-size: 0.95rem; font-weight: 600; color: #fff; }
-        .btn-camera { background: #4CAF50; } .btn-gallery { background: #2196F3; }
-        .manual-form { display: none; }
-        .manual-form input { width: 100%; padding: 11px; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 0.85rem; margin-bottom: 8px; }
-        .manual-form .input-row { display: flex; gap: 8px; }
-        .manual-form .input-row input { flex: 1; }
-        .manual-form button { width: 100%; padding: 12px; background: #FF9800; color: #fff; border: none; border-radius: 10px; font-weight: 600; font-size: 0.9rem; margin-top: 4px; }
-        .preview-wrapper { position: relative; width: 100%; aspect-ratio: 1/1; border-radius: 16px; overflow: hidden; margin-bottom: 12px; background: #e8e8e8; display: none; }
-        .preview-wrapper img { width: 100%; height: 100%; object-fit: cover; }
-        .preview-wrapper button { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 20px; padding: 7px 12px; }
-        .loading-card { background: #fff; border-radius: 16px; padding: 24px; text-align: center; display: none; }
-        .spinner { width: 32px; height: 32px; border: 3px solid #e0e0e0; border-top: 3px solid #4CAF50; border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 12px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .result-card { background: #fff; border-radius: 16px; padding: 16px; display: none; }
-        .result-card .food-name { font-size: 1rem; font-weight: 700; }
-        .result-card .calories { font-size: 1.8rem; font-weight: 800; color: #e65100; }
-        .result-card .macro-row { display: flex; gap: 8px; margin-top: 10px; }
-        .result-card .macro-item { flex: 1; background: #f5f5f5; border-radius: 10px; padding: 8px; text-align: center; }
-        .result-card .macro-item .value { font-size: 1rem; font-weight: 700; }
-        .result-card .macro-item .label { font-size: 0.65rem; color: #888; }
-        .result-card .btn-add { width: 100%; margin-top: 12px; padding: 10px; background: #4CAF50; color: #fff; border: none; border-radius: 10px; font-weight: 600; }
-        .error-card { background: #ffebee; border-radius: 16px; padding: 14px; display: none; color: #c62828; font-size: 0.85rem; }
-        .debug-card { background: #fff3e0; border-radius: 16px; padding: 14px; display: none; color: #e65100; font-size: 0.75rem; word-break: break-all; margin-bottom: 12px; }
-        .history-list { list-style: none; }
-        .history-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
-        .history-item .name { font-weight: 600; }
-        .history-item .kcal { font-weight: 700; color: #e65100; }
-        .history-item .btn-del { background: none; border: none; color: #ccc; font-size: 1.1rem; }
-        .empty-history { text-align: center; color: #bbb; padding: 20px; }
-        .btn-reset { display: block; width: 100%; margin-top: 10px; padding: 8px; background: none; border: 1px solid #e0e0e0; border-radius: 8px; color: #999; }
-        .footer { text-align: center; margin-top: 16px; font-size: 0.7rem; color: #bbb; }
-        #fileInput { display: none; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>拍照算熱量</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,sans-serif;background:#f0f2f5;padding:16px;display:flex;flex-direction:column;align-items:center}
+.c{max-width:420px;width:100%}
+h1{text-align:center;font-size:1.4rem;margin-bottom:12px}
+.card{background:#fff;border-radius:16px;padding:14px;margin-bottom:10px}
+.title{font-weight:700;font-size:.9rem;margin-bottom:8px}
+input,button{width:100%;padding:12px;border:1.5px solid #e0e0e0;border-radius:10px;font-size:.9rem;margin-bottom:8px}
+button{background:#4CAF50;color:#fff;border:none;font-weight:600;cursor:pointer}
+button.blue{background:#2196F3}
+button.orange{background:#FF9800}
+button.red{background:#f44336}
+.row{display:flex;gap:8px}
+.row input{flex:1}
+.tabs{display:flex;margin-bottom:10px}
+.tabs button{flex:1;border-radius:0;background:#e0e0e0;color:#666;margin:0}
+.tabs button.on{background:#4CAF50;color:#fff}
+.hide{display:none}
+.history-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eee}
+.history-item .del{background:none;border:none;color:red;width:auto;padding:4px 8px}
+</style>
 </head>
 <body>
-<div class="container">
-    <div class="header"><span class="icon">🥗</span><h1>拍照計算熱量</h1></div>
+<div class="c">
+<h1>🥗 拍照計算熱量</h1>
 
-    <div class="card">
-        <div class="card-title">🎯 每日目標</div>
-        <div class="goal-row">
-            <label>目標熱量</label>
-            <input type="number" id="goalInput" value="2000" min="500" max="10000" step="50">
-            <span>大卡</span>
-            <button id="btnSaveGoal">儲存</button>
-        </div>
-        <div class="remain-section">
-            <div class="remain-text"><span>今日剩餘</span><span class="value green" id="remainCal">2000</span></div>
-            <div class="progress-bar"><div class="progress-fill safe" id="progressFill" style="width:0%"></div></div>
-            <div class="today-total">已攝取 <strong id="todayTotal">0</strong> 大卡</div>
-        </div>
-    </div>
-
-    <div class="card api-card">
-        <div class="card-title">🔑 Gemini API Key</div>
-        <input type="password" id="apiKey" placeholder="輸入你的 Gemini API Key...">
-        <div class="hint"><a href="https://aistudio.google.com/apikey" target="_blank">👉 點此免費申請</a></div>
-    </div>
-
-    <!-- 切換頁籤：拍照 / 手動輸入 -->
-    <div class="tab-row">
-        <button class="tab-btn active" id="tabPhoto">📷 拍照辨識</button>
-        <button class="tab-btn" id="tabManual">✏️ 手動輸入</button>
-    </div>
-
-    <!-- 拍照模式 -->
-    <div id="photoMode">
-        <div class="btn-row">
-            <button class="btn-camera" id="btnCamera">📷 拍照</button>
-            <button class="btn-gallery" id="btnGallery">🖼️ 選照片</button>
-        </div>
-    </div>
-
-    <!-- 手動輸入模式 -->
-    <div class="manual-form card" id="manualMode">
-        <input type="text" id="manualFood" placeholder="食物名稱（例如：滷雞腿便當）">
-        <div class="input-row">
-            <input type="number" id="manualCal" placeholder="熱量（大卡）" min="0">
-            <input type="number" id="manualProtein" placeholder="蛋白質（克）" min="0">
-        </div>
-        <div class="input-row">
-            <input type="number" id="manualFat" placeholder="脂肪（克）" min="0">
-            <input type="number" id="manualCarbs" placeholder="碳水（克）" min="0">
-        </div>
-        <button id="btnManualAdd">✅ 加入今日紀錄</button>
-    </div>
-
-    <input type="file" id="fileInput" accept="image/*">
-    <div class="preview-wrapper" id="previewWrapper"><img id="previewImg" alt="食物照片"><button id="btnRetake">✕ 重拍</button></div>
-    <div class="loading-card" id="loadingCard"><div class="spinner"></div><p>AI 正在辨識食物...</p></div>
-    <div class="debug-card" id="debugCard"></div>
-    <div class="error-card" id="errorCard"></div>
-
-    <div class="result-card" id="resultCard">
-        <div class="food-name" id="foodName"></div>
-        <div class="calories" id="caloriesDisplay">-- <span>大卡</span></div>
-        <div class="macro-row">
-            <div class="macro-item"><div class="value" id="proteinVal">--</div><div class="label">蛋白質 g</div></div>
-            <div class="macro-item"><div class="value" id="fatVal">--</div><div class="label">脂肪 g</div></div>
-            <div class="macro-item"><div class="value" id="carbsVal">--</div><div class="label">碳水 g</div></div>
-        </div>
-        <button class="btn-add" id="btnAddRecord">✅ 加入今日紀錄</button>
-        <div style="margin-top:10px;font-size:0.65rem;color:#bbb;text-align:center;">⚠️ AI 估算僅供參考</div>
-    </div>
-
-    <div class="card">
-        <div class="card-title">📋 今日紀錄</div>
-        <ul class="history-list" id="historyList"><li class="empty-history">尚無紀錄，拍張照片或手動輸入吧！</li></ul>
-        <button class="btn-reset" id="btnReset">清空今日紀錄</button>
-    </div>
-    <div class="footer">資料只存在你的手機 · 隱私安全</div>
+<div class="card">
+<div class="title">🎯 每日目標</div>
+<div class="row">
+<input type="number" id="goalInput" value="2000" style="width:80px;flex:none">
+<span style="line-height:44px">大卡</span>
+<button id="btnSaveGoal" style="width:60px;flex:none">儲存</button>
 </div>
+<p>今日剩餘：<b id="remainCal" style="font-size:1.4rem;color:#2e7d32">2000</b> 大卡</p>
+<p style="font-size:.8rem;color:#888">已攝取 <b id="todayTotal">0</b> 大卡</p>
+</div>
+
+<div class="card">
+<div class="title">🔑 API Key</div>
+<input type="password" id="apiKey" placeholder="貼上 Gemini API Key">
+</div>
+
+<div class="tabs">
+<button id="tabPhoto" class="on">📷 拍照</button>
+<button id="tabManual">✏️ 手動</button>
+</div>
+
+<div id="photoMode">
+<div class="row">
+<button id="btnCamera">📷 拍照</button>
+<button id="btnGallery" class="blue">🖼️ 選照片</button>
+</div>
+<input type="file" id="fileInput" accept="image/*" class="hide">
+<img id="previewImg" style="width:100%;border-radius:12px;display:none;margin-bottom:8px">
+<div id="loadingMsg" style="text-align:center;display:none;padding:20px">AI 辨識中...</div>
+<div id="debugMsg" style="background:#fff3e0;padding:10px;border-radius:10px;display:none;font-size:.7rem;margin-bottom:8px"></div>
+<div id="resultBox" style="display:none;background:#fff;border-radius:16px;padding:14px">
+<p><b id="foodName"></b></p>
+<p style="font-size:2rem;font-weight:800;color:#e65100"><span id="calVal">0</span> 大卡</p>
+<div class="row" style="margin:8px 0">
+<div style="flex:1;text-align:center;background:#f5f5f5;padding:8px;border-radius:8px"><b id="proteinVal">0</b><br><small>蛋白質g</small></div>
+<div style="flex:1;text-align:center;background:#f5f5f5;padding:8px;border-radius:8px"><b id="fatVal">0</b><br><small>脂肪g</small></div>
+<div style="flex:1;text-align:center;background:#f5f5f5;padding:8px;border-radius:8px"><b id="carbsVal">0</b><br><small>碳水g</small></div>
+</div>
+<button id="btnAdd">✅ 加入今日紀錄</button>
+</div>
+</div>
+
+<div id="manualMode" class="card hide">
+<input type="text" id="mFood" placeholder="食物名稱">
+<div class="row"><input type="number" id="mCal" placeholder="熱量(大卡)"><input type="number" id="mPro" placeholder="蛋白質(g)"></div>
+<div class="row"><input type="number" id="mFat" placeholder="脂肪(g)"><input type="number" id="mCarbs" placeholder="碳水(g)"></div>
+<button id="btnManualAdd" class="orange">✅ 加入今日紀錄</button>
+</div>
+
+<div class="card">
+<div class="title">📋 今日紀錄</div>
+<div id="historyList"><p style="color:#bbb;text-align:center">尚無紀錄</p></div>
+<button id="btnReset" class="red" style="margin-top:8px">清空今日紀錄</button>
+</div>
+</div>
+
 <script>
-(function() {
-    var apiKeyInput = document.getElementById('apiKey');
-    var fileInput = document.getElementById('fileInput');
-    var previewWrapper = document.getElementById('previewWrapper');
-    var previewImg = document.getElementById('previewImg');
-    var loadingCard = document.getElementById('loadingCard');
-    var errorCard = document.getElementById('errorCard');
-    var debugCard = document.getElementById('debugCard');
-    var resultCard = document.getElementById('resultCard');
-    var btnCamera = document.getElementById('btnCamera');
-    var btnGallery = document.getElementById('btnGallery');
-    var goalInput = document.getElementById('goalInput');
-    var remainCal = document.getElementById('remainCal');
-    var progressFill = document.getElementById('progressFill');
-    var todayTotal = document.getElementById('todayTotal');
-    var historyList = document.getElementById('historyList');
-    var latestResult = null;
+(function(){
+function $(id){return document.getElementById(id)}
 
-    // 頁籤切換
-    var tabPhoto = document.getElementById('tabPhoto');
-    var tabManual = document.getElementById('tabManual');
-    var photoMode = document.getElementById('photoMode');
-    var manualMode = document.getElementById('manualMode');
+var apiKey=$('apiKey'),fileInput=$('fileInput'),previewImg=$('previewImg');
+var loadingMsg=$('loadingMsg'),debugMsg=$('debugMsg'),resultBox=$('resultBox');
+var latestResult=null;
 
-    tabPhoto.addEventListener('click', function() {
-        tabPhoto.classList.add('active');
-        tabManual.classList.remove('active');
-        photoMode.style.display = 'block';
-        manualMode.style.display = 'none';
-        resetPhoto();
-    });
+// 頁籤
+$('tabPhoto').onclick=function(){
+this.className='on';$('tabManual').className='';
+$('photoMode').className='';$('manualMode').className='card hide';
+};
+$('tabManual').onclick=function(){
+this.className='on';$('tabPhoto').className='';
+$('photoMode').className='hide';$('manualMode').className='card';
+};
 
-    tabManual.addEventListener('click', function() {
-        tabManual.classList.add('active');
-        tabPhoto.classList.remove('active');
-        photoMode.style.display = 'none';
-        manualMode.style.display = 'block';
-        resetPhoto();
-    });
+// 目標儲存
+$('btnSaveGoal').onclick=function(){
+var v=parseInt($('goalInput').value)||2000;
+$('goalInput').value=v;
+localStorage.setItem('goal',v);
+updateRemain();
+};
 
-    // 初始狀態：顯示拍照模式
-    photoMode.style.display = 'block';
-    manualMode.style.display = 'none';
+// 手動新增
+$('btnManualAdd').onclick=function(){
+var f=$('mFood').value.trim();
+var c=parseInt($('mCal').value)||0;
+if(!f){alert('請輸入食物名稱');return;}
+if(c<=0){alert('請輸入熱量');return;}
+addRecord(f,c,parseInt($('mPro').value)||0,parseInt($('mFat').value)||0,parseInt($('mCarbs').value)||0);
+$('mFood').value='';$('mCal').value='';$('mPro').value='';$('mFat').value='';$('mCarbs').value='';
+};
 
-    // ===== 手動輸入 =====
-    document.getElementById('btnManualAdd').addEventListener('click', function() {
-        var food = document.getElementById('manualFood').value.trim();
-        var cal = parseInt(document.getElementById('manualCal').value) || 0;
-        var protein = parseInt(document.getElementById('manualProtein').value) || 0;
-        var fat = parseInt(document.getElementById('manualFat').value) || 0;
-        var carbs = parseInt(document.getElementById('manualCarbs').value) || 0;
+// 拍照
+$('btnCamera').onclick=function(){
+fileInput.setAttribute('capture','environment');
+fileInput.click();
+};
+$('btnGallery').onclick=function(){
+fileInput.removeAttribute('capture');
+fileInput.click();
+};
+fileInput.onchange=function(e){
+var f=e.target.files[0];
+if(!f)return;
+var r=new FileReader();
+r.onload=function(ev){
+var img=new Image();
+img.onload=function(){
+var c=document.createElement('canvas'),s=1024,w=img.width,h=img.height;
+if(w>h&&w>s){h=Math.round(h*s/w);w=s}else if(h>s){w=Math.round(w*s/h);h=s}
+c.width=w;c.height=h;
+c.getContext('2d').drawImage(img,0,0,w,h);
+var b64=c.toDataURL('image/jpeg',0.75);
+previewImg.src=b64;previewImg.style.display='block';
+resultBox.style.display='none';debugMsg.style.display='none';
+analyze(b64);
+};
+img.src=ev.target.result;
+};
+r.readAsDataURL(f);
+};
 
-        if (!food) { alert('請輸入食物名稱'); return; }
-        if (cal <= 0) { alert('請輸入熱量'); return; }
+// AI 分析
+async function analyze(b64){
+var key=apiKey.value.trim();
+if(!key){alert('請先輸入 API Key');return;}
+loadingMsg.style.display='block';resultBox.style.display='none';debugMsg.style.display='none';
+try{
+var url='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+key;
+var b64d=b64.split(',')[1];
+var mt=b64.match(/data:(image\/\w+);/)?.[1]||'image/jpeg';
+var body={contents:[{parts:[
+{text:'分析這張食物照片。只回一個JSON：{"food":"食物名","calories":熱量,"protein":蛋白質,"fat":脂肪,"carbs":碳水}。都是整數，不要其他文字。'},
+{inline_data:{mime_type:mt,data:b64d}}
+]}],generationConfig:{temperature:0,maxOutputTokens:200}};
+var resp=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+var data=await resp.json();
+if(!resp.ok)throw new Error(data.error?.message||'錯誤');
+var txt=data.candidates?.[0]?.content?.parts?.[0]?.text;
+if(!txt)throw new Error('無回覆');
+debugMsg.style.display='block';
+debugMsg.innerHTML='<b>AI回覆：</b><br>'+txt.replace(/</g,'&lt;');
 
-        var records = loadTodayRecords();
-        records.push({ food: food, calories: cal, protein: protein, fat: fat, carbs: carbs });
-        saveTodayRecords(records);
-        updateHistoryList();
-        updateRemainDisplay();
+// 解析
+var cleaned=txt.trim().replace(/```json\s*/gi,'').replace(/```/g,'').trim();
+var si=cleaned.indexOf('{'),ei=cleaned.lastIndexOf('}');
+var jp=(si!==-1&&ei!==-1)?cleaned.substring(si,ei+1):cleaned;
+var result;
+try{result=JSON.parse(jp)}catch(e){result=null}
+if(!result||!result.calories||result.calories===0){
+var fm=jp.match(/"food"\s*:\s*"([^"]+)"/);
+var cm=jp.match(/"calories"\s*:\s*"?\s*(\d+)/);
+var pm=jp.match(/"protein"\s*:\s*"?\s*(\d+)/);
+var ftm=jp.match(/"fat"\s*:\s*"?\s*(\d+)/);
+var cbm=jp.match(/"carbs"\s*:\s*"?\s*(\d+)/);
+result={
+food:fm?fm[1]:'未知',
+calories:cm?parseInt(cm[1]):0,
+protein:pm?parseInt(pm[1]):0,
+fat:ftm?parseInt(ftm[1]):0,
+carbs:cbm?parseInt(cbm[1]):0
+};
+}
+latestResult=result;
+$('foodName').textContent=result.food||'未知';
+$('calVal').textContent=result.calories||0;
+$('proteinVal').textContent=result.protein||0;
+$('fatVal').textContent=result.fat||0;
+$('carbsVal').textContent=result.carbs||0;
+resultBox.style.display='block';
+}catch(err){
+alert('錯誤：'+err.message);
+}finally{
+loadingMsg.style.display='none';
+}
+}
 
-        // 清空表單
-        document.getElementById('manualFood').value = '';
-        document.getElementById('manualCal').value = '';
-        document.getElementById('manualProtein').value = '';
-        document.getElementById('manualFat').value = '';
-        document.getElementById('manualCarbs').value = '';
+// 加入紀錄
+$('btnAdd').onclick=function(){
+if(!latestResult)return;
+addRecord(latestResult.food,latestResult.calories,latestResult.protein,latestResult.fat,latestResult.carbs);
+previewImg.style.display='none';resultBox.style.display='none';debugMsg.style.display='none';
+latestResult=null;
+};
 
-        alert('✅ 已加入：' + food + ' ' + cal + ' 大卡');
-    });
+function addRecord(food,cal,pro,fat,carbs){
+var recs=getRecords();
+recs.push({food:food,calories:cal,protein:pro,fat:fat,carbs:carbs});
+saveRecords(recs);
+renderHistory();
+updateRemain();
+}
 
-    // ===== 以下為原有功能 =====
-    function getTodayKey() {
-        var d = new Date();
-        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-    }
-    function saveGoal() {
-        var val = parseInt(goalInput.value) || 2000;
-        goalInput.value = val;
-        localStorage.setItem('daily_goal', val);
-        updateRemainDisplay();
-    }
-    function loadTodayRecords() {
-        var today = getTodayKey();
-        var savedDate = localStorage.getItem('record_date');
-        if (savedDate !== today) { localStorage.setItem('record_date', today); localStorage.setItem('today_records', JSON.stringify([])); return []; }
-        var raw = localStorage.getItem('today_records');
-        return raw ? JSON.parse(raw) : [];
-    }
-    function saveTodayRecords(records) { localStorage.setItem('record_date', getTodayKey()); localStorage.setItem('today_records', JSON.stringify(records)); }
-    function updateRemainDisplay() {
-        var goal = parseInt(goalInput.value) || 2000;
-        var records = loadTodayRecords();
-        var consumed = records.reduce(function(sum, r) { return sum + (r.calories || 0); }, 0);
-        var remain = goal - consumed;
-        todayTotal.textContent = consumed;
-        remainCal.textContent = remain >= 0 ? remain : 0;
-        var percent = Math.min((consumed / goal) * 100, 100);
-        progressFill.style.width = percent + '%';
-        remainCal.className = 'value'; progressFill.className = 'progress-fill';
-        if (percent < 80) { remainCal.classList.add('green'); progressFill.classList.add('safe'); }
-        else if (percent < 100) { remainCal.classList.add('orange'); progressFill.classList.add('warn'); }
-        else { remainCal.classList.add('red'); progressFill.classList.add('over'); }
-    }
-    function updateHistoryList() {
-        var records = loadTodayRecords();
-        historyList.innerHTML = '';
-        if (records.length === 0) { historyList.innerHTML = '<li class="empty-history">尚無紀錄，拍張照片或手動輸入吧！</li>'; return; }
-        records.forEach(function(r, index) {
-            var li = document.createElement('li');
-            li.className = 'history-item';
-            li.innerHTML = '<div class="info"><div class="name">' + r.food + '</div><div style="font-size:0.7rem;color:#999;">蛋白' + r.protein + 'g · 脂肪' + r.fat + 'g · 碳水' + r.carbs + 'g</div></div><span class="kcal">' + r.calories + ' 大卡</span><button class="btn-del" data-index="' + index + '">✕</button>';
-            historyList.appendChild(li);
-        });
-        document.querySelectorAll('.btn-del').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                var recs = loadTodayRecords();
-                recs.splice(parseInt(this.getAttribute('data-index')), 1);
-                saveTodayRecords(recs);
-                updateHistoryList();
-                updateRemainDisplay();
-            });
-        });
-    }
-    function addToToday() {
-        if (!latestResult) return;
-        var records = loadTodayRecords();
-        records.push({ food: latestResult.food || '未知', calories: latestResult.calories || 0, protein: latestResult.protein || 0, fat: latestResult.fat || 0, carbs: latestResult.carbs || 0 });
-        saveTodayRecords(records);
-        resultCard.style.display = 'none'; previewWrapper.style.display = 'none'; debugCard.style.display = 'none'; latestResult = null;
-        updateHistoryList(); updateRemainDisplay();
-    }
-    function resetPhoto() {
-        previewWrapper.style.display = 'none'; previewImg.src = ''; fileInput.value = '';
-        resultCard.style.display = 'none'; errorCard.style.display = 'none'; debugCard.style.display = 'none'; latestResult = null;
-    }
-    function handleFile(event) {
-        var file = event.target.files[0];
-        if (!file) return;
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            var img = new Image();
-            img.onload = function() {
-                var canvas = document.createElement('canvas');
-                var maxSize = 1024, w = img.width, h = img.height;
-                if (w > h && w > maxSize) { h = Math.round(h * maxSize / w); w = maxSize; }
-                else if (h > maxSize) { w = Math.round(w * maxSize / h); h = maxSize; }
-                canvas.width = w; canvas.height = h;
-                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                var compressed = canvas.toDataURL('image/jpeg', 0.75);
-                previewImg.src = compressed; previewWrapper.style.display = 'block';
-                errorCard.style.display = 'none'; resultCard.style.display = 'none'; debugCard.style.display = 'none';
-                analyzeImage(compressed);
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    }
+function getKey(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
+function getRecords(){
+var today=getKey();
+var sd=localStorage.getItem('rd');
+if(sd!==today){localStorage.setItem('rd',today);return[]}
+var r=localStorage.getItem('recs');
+return r?JSON.parse(r):[];
+}
+function saveRecords(r){localStorage.setItem('rd',getKey());localStorage.setItem('recs',JSON.stringify(r))}
+function updateRemain(){
+var goal=parseInt($('goalInput').value)||2000;
+var recs=getRecords();
+var sum=recs.reduce(function(a,b){return a+(b.calories||0)},0);
+var rem=goal-sum;
+$('todayTotal').textContent=sum;
+var rc=$('remainCal');
+rc.textContent=rem>=0?rem:0;
+rc.style.color=sum/goal<0.8?'#2e7d32':sum/goal<1?'#e65100':'#c62828';
+}
+function renderHistory(){
+var recs=getRecords();
+var h=$('historyList');
+h.innerHTML='';
+if(recs.length===0){h.innerHTML='<p style="color:#bbb;text-align:center">尚無紀錄</p>';return}
+recs.forEach(function(r,i){
+var d=document.createElement('div');
+d.className='history-item';
+d.innerHTML='<div><b>'+r.food+'</b><br><small>蛋白'+r.protein+'g 脂肪'+r.fat+'g 碳水'+r.carbs+'g</small></div><div><b>'+r.calories+' 大卡</b> <button class="del">✕</button></div>';
+d.querySelector('.del').onclick=function(){
+var recs2=getRecords();
+recs2.splice(i,1);
+saveRecords(recs2);
+renderHistory();
+updateRemain();
+};
+h.appendChild(d);
+});
+}
+$('btnReset').onclick=function(){if(confirm('清空？')){saveRecords([]);renderHistory();updateRemain()}};
 
-    function parseAIJson(text) {
-        var cleaned = text.trim();
-        cleaned = cleaned.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-        var start = cleaned.indexOf('{');
-        var end = cleaned.lastIndexOf('}');
-        var jsonPart = (start !== -1 && end !== -1 && end > start) ? cleaned.substring(start, end + 1) : cleaned;
-        try { var r = JSON.parse(jsonPart); if (r.calories && r.calories > 0) return r; } catch(e) {}
-        var food = '無法辨識';
-        var foodMatch = jsonPart.match(/"food"\s*:\s*"([^"]+)"/);
-        if (foodMatch) food = foodMatch[1];
-        function extractNum(key) {
-            var regex = new RegExp('"' + key + '"\\s*:\\s*"?\\s*(\\d+[.]?\\d*)', 'i');
-            var match = jsonPart.match(regex);
-            if (match) return Math.round(parseFloat(match[1]));
-            return 0;
-        }
-        return { food: food, calories: extractNum('calories'), protein: extractNum('protein'), fat: extractNum('fat'), carbs: extractNum('carbs') };
-    }
-
-    async function analyzeImage(base64Image) {
-        var apiKey = apiKeyInput.value.trim();
-        if (!apiKey) { errorCard.style.display = 'block'; errorCard.textContent = '❌ 請先輸入 API Key'; return; }
-        loadingCard.style.display = 'block'; resultCard.style.display = 'none'; errorCard.style.display = 'none'; debugCard.style.display = 'none';
-        btnCamera.disabled = true; btnGallery.disabled = true;
-        try {
-            var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
-            var base64Data = base64Image.split(',')[1];
-            var mimeType = base64Image.match(/data:(image\/\w+);/)?.[1] || 'image/jpeg';
-            var requestBody = {
-                contents: [{ parts: [
-                    { text: '請分析這張食物照片。回覆一個乾淨的JSON，不要加任何其他文字，格式如下：\n{"food":"食物名稱","calories":熱量大卡整數,"protein":蛋白質克數整數,"fat":脂肪克數整數,"carbs":碳水化合物克數整數}\n請根據食物份量合理估算數值。' },
-                    { inline_data: { mime_type: mimeType, data: base64Data } }
-                ] }],
-                generationConfig: { temperature: 0, maxOutputTokens: 256 }
-            };
-            var response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) });
- 
+// 載入
+var sk=localStorage.getItem('apikey');if(sk)apiKey.value=sk;
+apiKey.oninput=function(){localStorage.setItem('apikey',this.value)};
+var sg=localStorage.getItem('goal');if(sg)$('goalInput').value=sg;
+updateRemain();
+renderHistory();
+})();
+</script>
+</body>
+</html>

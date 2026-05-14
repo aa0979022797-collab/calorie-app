@@ -14,7 +14,8 @@
         .header .icon { font-size: 2.5rem; }
         .header h1 { font-size: 1.4rem; color: #1a1a1a; }
         .card { background: #fff; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .card-title { font-weight: 700; font-size: 0.9rem; color: #333; margin-bottom: 10px; }
+        .card-title { font-weight: 700; font-size: 0.9rem; color: #333; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }
+        .card-title .toggle { font-size: 0.75rem; color: #4CAF50; font-weight: 500; }
         .goal-row { display: flex; align-items: center; gap: 10px; }
         .goal-row input { width: 90px; padding: 10px; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 0.9rem; text-align: center; }
         .goal-row button { padding: 10px 16px; background: #4CAF50; color: #fff; border: none; border-radius: 10px; font-weight: 600; margin-left: auto; }
@@ -28,9 +29,17 @@
         .today-total { font-size: 0.8rem; color: #888; margin-top: 6px; }
         .api-card input { width: 100%; padding: 11px; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 0.8rem; font-family: monospace; }
         .api-card .hint { font-size: 0.7rem; color: #aaa; margin-top: 5px; }
+        .tab-row { display: flex; gap: 0; margin-bottom: 12px; border-radius: 14px; overflow: hidden; }
+        .tab-btn { flex: 1; padding: 12px; border: none; font-size: 0.85rem; font-weight: 600; cursor: pointer; background: #e0e0e0; color: #666; }
+        .tab-btn.active { background: #4CAF50; color: #fff; }
         .btn-row { display: flex; gap: 10px; margin-bottom: 12px; }
         .btn-row button { flex: 1; padding: 14px; border: none; border-radius: 14px; font-size: 0.95rem; font-weight: 600; color: #fff; }
         .btn-camera { background: #4CAF50; } .btn-gallery { background: #2196F3; }
+        .manual-form { display: none; }
+        .manual-form input { width: 100%; padding: 11px; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 0.85rem; margin-bottom: 8px; }
+        .manual-form .input-row { display: flex; gap: 8px; }
+        .manual-form .input-row input { flex: 1; }
+        .manual-form button { width: 100%; padding: 12px; background: #FF9800; color: #fff; border: none; border-radius: 10px; font-weight: 600; font-size: 0.9rem; margin-top: 4px; }
         .preview-wrapper { position: relative; width: 100%; aspect-ratio: 1/1; border-radius: 16px; overflow: hidden; margin-bottom: 12px; background: #e8e8e8; display: none; }
         .preview-wrapper img { width: 100%; height: 100%; object-fit: cover; }
         .preview-wrapper button { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 20px; padding: 7px 12px; }
@@ -46,6 +55,7 @@
         .result-card .macro-item .label { font-size: 0.65rem; color: #888; }
         .result-card .btn-add { width: 100%; margin-top: 12px; padding: 10px; background: #4CAF50; color: #fff; border: none; border-radius: 10px; font-weight: 600; }
         .error-card { background: #ffebee; border-radius: 16px; padding: 14px; display: none; color: #c62828; font-size: 0.85rem; }
+        .debug-card { background: #fff3e0; border-radius: 16px; padding: 14px; display: none; color: #e65100; font-size: 0.75rem; word-break: break-all; margin-bottom: 12px; }
         .history-list { list-style: none; }
         .history-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
         .history-item .name { font-weight: 600; }
@@ -60,6 +70,7 @@
 <body>
 <div class="container">
     <div class="header"><span class="icon">🥗</span><h1>拍照計算熱量</h1></div>
+
     <div class="card">
         <div class="card-title">🎯 每日目標</div>
         <div class="goal-row">
@@ -74,19 +85,47 @@
             <div class="today-total">已攝取 <strong id="todayTotal">0</strong> 大卡</div>
         </div>
     </div>
+
     <div class="card api-card">
         <div class="card-title">🔑 Gemini API Key</div>
         <input type="password" id="apiKey" placeholder="輸入你的 Gemini API Key...">
         <div class="hint"><a href="https://aistudio.google.com/apikey" target="_blank">👉 點此免費申請</a></div>
     </div>
-    <div class="btn-row">
-        <button class="btn-camera" id="btnCamera">📷 拍照</button>
-        <button class="btn-gallery" id="btnGallery">🖼️ 選照片</button>
+
+    <!-- 切換頁籤：拍照 / 手動輸入 -->
+    <div class="tab-row">
+        <button class="tab-btn active" id="tabPhoto">📷 拍照辨識</button>
+        <button class="tab-btn" id="tabManual">✏️ 手動輸入</button>
     </div>
+
+    <!-- 拍照模式 -->
+    <div id="photoMode">
+        <div class="btn-row">
+            <button class="btn-camera" id="btnCamera">📷 拍照</button>
+            <button class="btn-gallery" id="btnGallery">🖼️ 選照片</button>
+        </div>
+    </div>
+
+    <!-- 手動輸入模式 -->
+    <div class="manual-form card" id="manualMode">
+        <input type="text" id="manualFood" placeholder="食物名稱（例如：滷雞腿便當）">
+        <div class="input-row">
+            <input type="number" id="manualCal" placeholder="熱量（大卡）" min="0">
+            <input type="number" id="manualProtein" placeholder="蛋白質（克）" min="0">
+        </div>
+        <div class="input-row">
+            <input type="number" id="manualFat" placeholder="脂肪（克）" min="0">
+            <input type="number" id="manualCarbs" placeholder="碳水（克）" min="0">
+        </div>
+        <button id="btnManualAdd">✅ 加入今日紀錄</button>
+    </div>
+
     <input type="file" id="fileInput" accept="image/*">
     <div class="preview-wrapper" id="previewWrapper"><img id="previewImg" alt="食物照片"><button id="btnRetake">✕ 重拍</button></div>
     <div class="loading-card" id="loadingCard"><div class="spinner"></div><p>AI 正在辨識食物...</p></div>
+    <div class="debug-card" id="debugCard"></div>
     <div class="error-card" id="errorCard"></div>
+
     <div class="result-card" id="resultCard">
         <div class="food-name" id="foodName"></div>
         <div class="calories" id="caloriesDisplay">-- <span>大卡</span></div>
@@ -98,9 +137,10 @@
         <button class="btn-add" id="btnAddRecord">✅ 加入今日紀錄</button>
         <div style="margin-top:10px;font-size:0.65rem;color:#bbb;text-align:center;">⚠️ AI 估算僅供參考</div>
     </div>
+
     <div class="card">
         <div class="card-title">📋 今日紀錄</div>
-        <ul class="history-list" id="historyList"><li class="empty-history">尚無紀錄，拍張照片吧！</li></ul>
+        <ul class="history-list" id="historyList"><li class="empty-history">尚無紀錄，拍張照片或手動輸入吧！</li></ul>
         <button class="btn-reset" id="btnReset">清空今日紀錄</button>
     </div>
     <div class="footer">資料只存在你的手機 · 隱私安全</div>
@@ -113,6 +153,7 @@
     var previewImg = document.getElementById('previewImg');
     var loadingCard = document.getElementById('loadingCard');
     var errorCard = document.getElementById('errorCard');
+    var debugCard = document.getElementById('debugCard');
     var resultCard = document.getElementById('resultCard');
     var btnCamera = document.getElementById('btnCamera');
     var btnGallery = document.getElementById('btnGallery');
@@ -123,6 +164,60 @@
     var historyList = document.getElementById('historyList');
     var latestResult = null;
 
+    // 頁籤切換
+    var tabPhoto = document.getElementById('tabPhoto');
+    var tabManual = document.getElementById('tabManual');
+    var photoMode = document.getElementById('photoMode');
+    var manualMode = document.getElementById('manualMode');
+
+    tabPhoto.addEventListener('click', function() {
+        tabPhoto.classList.add('active');
+        tabManual.classList.remove('active');
+        photoMode.style.display = 'block';
+        manualMode.style.display = 'none';
+        resetPhoto();
+    });
+
+    tabManual.addEventListener('click', function() {
+        tabManual.classList.add('active');
+        tabPhoto.classList.remove('active');
+        photoMode.style.display = 'none';
+        manualMode.style.display = 'block';
+        resetPhoto();
+    });
+
+    // 初始狀態：顯示拍照模式
+    photoMode.style.display = 'block';
+    manualMode.style.display = 'none';
+
+    // ===== 手動輸入 =====
+    document.getElementById('btnManualAdd').addEventListener('click', function() {
+        var food = document.getElementById('manualFood').value.trim();
+        var cal = parseInt(document.getElementById('manualCal').value) || 0;
+        var protein = parseInt(document.getElementById('manualProtein').value) || 0;
+        var fat = parseInt(document.getElementById('manualFat').value) || 0;
+        var carbs = parseInt(document.getElementById('manualCarbs').value) || 0;
+
+        if (!food) { alert('請輸入食物名稱'); return; }
+        if (cal <= 0) { alert('請輸入熱量'); return; }
+
+        var records = loadTodayRecords();
+        records.push({ food: food, calories: cal, protein: protein, fat: fat, carbs: carbs });
+        saveTodayRecords(records);
+        updateHistoryList();
+        updateRemainDisplay();
+
+        // 清空表單
+        document.getElementById('manualFood').value = '';
+        document.getElementById('manualCal').value = '';
+        document.getElementById('manualProtein').value = '';
+        document.getElementById('manualFat').value = '';
+        document.getElementById('manualCarbs').value = '';
+
+        alert('✅ 已加入：' + food + ' ' + cal + ' 大卡');
+    });
+
+    // ===== 以下為原有功能 =====
     function getTodayKey() {
         var d = new Date();
         return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
@@ -158,7 +253,7 @@
     function updateHistoryList() {
         var records = loadTodayRecords();
         historyList.innerHTML = '';
-        if (records.length === 0) { historyList.innerHTML = '<li class="empty-history">尚無紀錄，拍張照片吧！</li>'; return; }
+        if (records.length === 0) { historyList.innerHTML = '<li class="empty-history">尚無紀錄，拍張照片或手動輸入吧！</li>'; return; }
         records.forEach(function(r, index) {
             var li = document.createElement('li');
             li.className = 'history-item';
@@ -180,12 +275,12 @@
         var records = loadTodayRecords();
         records.push({ food: latestResult.food || '未知', calories: latestResult.calories || 0, protein: latestResult.protein || 0, fat: latestResult.fat || 0, carbs: latestResult.carbs || 0 });
         saveTodayRecords(records);
-        resultCard.style.display = 'none'; previewWrapper.style.display = 'none'; latestResult = null;
+        resultCard.style.display = 'none'; previewWrapper.style.display = 'none'; debugCard.style.display = 'none'; latestResult = null;
         updateHistoryList(); updateRemainDisplay();
     }
     function resetPhoto() {
         previewWrapper.style.display = 'none'; previewImg.src = ''; fileInput.value = '';
-        resultCard.style.display = 'none'; errorCard.style.display = 'none'; latestResult = null;
+        resultCard.style.display = 'none'; errorCard.style.display = 'none'; debugCard.style.display = 'none'; latestResult = null;
     }
     function handleFile(event) {
         var file = event.target.files[0];
@@ -202,7 +297,7 @@
                 canvas.getContext('2d').drawImage(img, 0, 0, w, h);
                 var compressed = canvas.toDataURL('image/jpeg', 0.75);
                 previewImg.src = compressed; previewWrapper.style.display = 'block';
-                errorCard.style.display = 'none'; resultCard.style.display = 'none';
+                errorCard.style.display = 'none'; resultCard.style.display = 'none'; debugCard.style.display = 'none';
                 analyzeImage(compressed);
             };
             img.src = e.target.result;
@@ -210,44 +305,29 @@
         reader.readAsDataURL(file);
     }
 
-    // ===== 核心修正：更強健的 JSON 解析 =====
     function parseAIJson(text) {
-        // 移除所有可能的 markdown 標記
         var cleaned = text.trim();
-        cleaned = cleaned.replace(/^```json\s*/i, '').replace(/```\s*$/, '');
-        cleaned = cleaned.replace(/^```\s*/i, '').replace(/```\s*$/, '');
-        cleaned = cleaned.trim();
-
-        // 嘗試直接解析
-        try { return JSON.parse(cleaned); } catch(e) {}
-
-        // 嘗試擷取第一個 { 到最後一個 }
+        cleaned = cleaned.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
         var start = cleaned.indexOf('{');
         var end = cleaned.lastIndexOf('}');
-        if (start !== -1 && end !== -1 && end > start) {
-            try { return JSON.parse(cleaned.substring(start, end + 1)); } catch(e) {}
+        var jsonPart = (start !== -1 && end !== -1 && end > start) ? cleaned.substring(start, end + 1) : cleaned;
+        try { var r = JSON.parse(jsonPart); if (r.calories && r.calories > 0) return r; } catch(e) {}
+        var food = '無法辨識';
+        var foodMatch = jsonPart.match(/"food"\s*:\s*"([^"]+)"/);
+        if (foodMatch) food = foodMatch[1];
+        function extractNum(key) {
+            var regex = new RegExp('"' + key + '"\\s*:\\s*"?\\s*(\\d+[.]?\\d*)', 'i');
+            var match = jsonPart.match(regex);
+            if (match) return Math.round(parseFloat(match[1]));
+            return 0;
         }
-
-        // 嘗試用正則擷取數字
-        var foodMatch = cleaned.match(/"food"\s*:\s*"([^"]+)"/);
-        var calMatch = cleaned.match(/"calories"\s*:\s*(\d+)/);
-        var proMatch = cleaned.match(/"protein"\s*:\s*(\d+)/);
-        var fatMatch = cleaned.match(/"fat"\s*:\s*(\d+)/);
-        var carbMatch = cleaned.match(/"carbs"\s*:\s*(\d+)/);
-
-        return {
-            food: foodMatch ? foodMatch[1] : '無法辨識',
-            calories: calMatch ? parseInt(calMatch[1]) : 0,
-            protein: proMatch ? parseInt(proMatch[1]) : 0,
-            fat: fatMatch ? parseInt(fatMatch[1]) : 0,
-            carbs: carbMatch ? parseInt(carbMatch[1]) : 0
-        };
+        return { food: food, calories: extractNum('calories'), protein: extractNum('protein'), fat: extractNum('fat'), carbs: extractNum('carbs') };
     }
 
     async function analyzeImage(base64Image) {
         var apiKey = apiKeyInput.value.trim();
         if (!apiKey) { errorCard.style.display = 'block'; errorCard.textContent = '❌ 請先輸入 API Key'; return; }
-        loadingCard.style.display = 'block'; resultCard.style.display = 'none'; errorCard.style.display = 'none';
+        loadingCard.style.display = 'block'; resultCard.style.display = 'none'; errorCard.style.display = 'none'; debugCard.style.display = 'none';
         btnCamera.disabled = true; btnGallery.disabled = true;
         try {
             var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
@@ -255,54 +335,10 @@
             var mimeType = base64Image.match(/data:(image\/\w+);/)?.[1] || 'image/jpeg';
             var requestBody = {
                 contents: [{ parts: [
-                    { text: '請分析這張食物照片。只回覆一個JSON，格式：{"food":"食物名","calories":熱量,"protein":蛋白質,"fat":脂肪,"carbs":碳水}。數值為整數，不要有文字說明。' },
+                    { text: '請分析這張食物照片。回覆一個乾淨的JSON，不要加任何其他文字，格式如下：\n{"food":"食物名稱","calories":熱量大卡整數,"protein":蛋白質克數整數,"fat":脂肪克數整數,"carbs":碳水化合物克數整數}\n請根據食物份量合理估算數值。' },
                     { inline_data: { mime_type: mimeType, data: base64Data } }
                 ] }],
-                generationConfig: { temperature: 0, maxOutputTokens: 200 }
+                generationConfig: { temperature: 0, maxOutputTokens: 256 }
             };
             var response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) });
-            var data = await response.json();
-            if (!response.ok) throw new Error(data.error?.message || 'HTTP ' + response.status);
-            var replyText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (!replyText) throw new Error('無回傳內容');
-
-            // 使用強健的解析函式
-            latestResult = parseAIJson(replyText);
-
-            document.getElementById('foodName').textContent = latestResult.food || '未知';
-            document.getElementById('caloriesDisplay').innerHTML = (latestResult.calories || 0) + ' <span>大卡</span>';
-            document.getElementById('proteinVal').textContent = latestResult.protein || 0;
-            document.getElementById('fatVal').textContent = latestResult.fat || 0;
-            document.getElementById('carbsVal').textContent = latestResult.carbs || 0;
-            resultCard.style.display = 'block';
-        } catch (err) {
-            errorCard.style.display = 'block';
-            errorCard.textContent = '❌ ' + err.message;
-        } finally {
-            loadingCard.style.display = 'none';
-            btnCamera.disabled = false; btnGallery.disabled = false;
-        }
-    }
-
-    document.getElementById('btnSaveGoal').addEventListener('click', saveGoal);
-    btnCamera.addEventListener('click', function() { fileInput.setAttribute('capture', 'environment'); fileInput.click(); });
-    btnGallery.addEventListener('click', function() { fileInput.removeAttribute('capture'); fileInput.click(); });
-    document.getElementById('btnRetake').addEventListener('click', resetPhoto);
-    document.getElementById('btnAddRecord').addEventListener('click', addToToday);
-    document.getElementById('btnReset').addEventListener('click', function() {
-        if (confirm('確定清空今日紀錄？')) { saveTodayRecords([]); updateHistoryList(); updateRemainDisplay(); }
-    });
-    fileInput.addEventListener('change', handleFile);
-    apiKeyInput.addEventListener('input', function() { localStorage.setItem('gemini_api_key', this.value); });
-    goalInput.addEventListener('change', saveGoal);
-
-    var savedKey = localStorage.getItem('gemini_api_key');
-    if (savedKey) apiKeyInput.value = savedKey;
-    var savedGoal = localStorage.getItem('daily_goal');
-    if (savedGoal) goalInput.value = savedGoal;
-    updateRemainDisplay();
-    updateHistoryList();
-})();
-</script>
-</body>
-</html>
+ 
